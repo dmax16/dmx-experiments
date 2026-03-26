@@ -1,0 +1,13 @@
+	[
+  {
+    "id": "concerts-dashboard",
+    "title": "Concerts Dashboard",
+    "description": "A dashboard for exploring concert and live music data. Built as a quick AI prototype.",
+    "url": "concerts-dashboard.html",
+    "date": "2026-03",
+    "status": "working",
+    "tags": ["data viz", "dashboard"],
+    "stack": ["Claude AI", "HTML"],
+    "thumbnail": null
+  }
+]

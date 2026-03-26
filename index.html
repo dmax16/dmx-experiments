@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DMX Experiments</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f13;
+      color: #e8e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 32px 40px;
+      border-bottom: 1px solid #ffffff15;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #fff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p { color: #94a3b8; margin-top: 4px; font-size: 0.9rem; }
+
+    .controls {
+      padding: 24px 40px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .search-box {
+      width: 100%;
+      background: #1a1a2e;
+      border: 1px solid #ffffff20;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #e8e8f0;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus { border-color: #a78bfa; }
+    .search-box::placeholder { color: #475569; }
+
+    .filter-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .tag-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 0 40px;
+    }
+
+    .tag-pill {
+      background: transparent;
+      border: 1px solid #ffffff20;
+      border-radius: 20px;
+      padding: 6px 14px;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .tag-pill:hover {
+      border-color: #a78bfa;
+      color: #e8e8f0;
+    }
+
+    .tag-pill.active {
+      background: #a78bfa;
+      border-color: #a78bfa;
+      color: #fff;
+    }
+
+    .status-toggles {
+      display: flex;
+      background: #1a1a2e;
+      border: 1px solid #ffffff20;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .status-toggle {
+      background: none;
+      border: none;
+      color: #64748b;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .status-toggle:hover { color: #e8e8f0; }
+    .status-toggle.active { background: #a78bfa; color: #fff; }
+
+    .sort-control {
+      display: flex;
+      background: #1a1a2e;
+      border: 1px solid #ffffff20;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .sort-btn {
+      background: none;
+      border: none;
+      color: #64748b;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .sort-btn:hover { color: #e8e8f0; }
+    .sort-btn.active { background: #a78bfa; color: #fff; }
+
+    .content {
+      padding: 24px 40px 40px;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #ffffff12;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: #ffffff25;
+      box-shadow: 0 8px 32px #00000060;
+    }
+
+    .card-thumb {
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff08;
+      font-size: 3.5rem;
+      line-height: 1;
+    }
+
+    .card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-body {
+      padding: 16px 20px 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    .status-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      line-height: 1.2;
+    }
+
+    .status-working { background: #4ade8020; color: #4ade80; }
+    .status-broken { background: #f8717120; color: #f87171; }
+    .status-archived { background: #64748b20; color: #64748b; }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+
+    .card-date {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .card-tag {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #ffffff0a;
+      color: #a78bfa;
+    }
+
+    .card-stack {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+
+    .error-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #f87171;
+      font-size: 0.95rem;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 24px 20px; }
+      .controls { padding: 16px 20px 0; }
+      .tag-pills { padding: 0 20px; }
+      .content { padding: 16px 20px 32px; }
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>DMX Experiments</h1>
+  <p>AI tools and prototypes — a personal lab notebook</p>
+</header>
+
+<div class="controls">
+  <input class="search-box" type="text" id="searchInput" placeholder="Search experiments...">
+  <div class="filter-row">
+    <div class="status-toggles" id="statusToggles">
+      <button class="status-toggle active" data-status="all">All</button>
+      <button class="status-toggle" data-status="working">Working</button>
+      <button class="status-toggle" data-status="broken">Broken</button>
+      <button class="status-toggle" data-status="archived">Archived</button>
+    </div>
+    <div class="sort-control" id="sortControl">
+      <button class="sort-btn active" data-sort="newest">Newest first</button>
+      <button class="sort-btn" data-sort="oldest">Oldest first</button>
+    </div>
+  </div>
+</div>
+
+<div class="tag-pills" id="tagPills"></div>
+
+<div class="content" id="content">
+  <div class="loading-state">Loading experiments...</div>
+</div>
+
+<script>
+const TAG_ICONS = {
+  'data viz': '\u{1F4CA}',
+  'automation': '\u2699\uFE0F',
+  'ai': '\u{1F916}',
+  'dashboard': '\u{1F5C2}\uFE0F',
+  'chat': '\u{1F4AC}',
+  'writing': '\u270D\uFE0F',
+  'code': '\u{1F4BB}',
+  'search': '\u{1F50D}',
+  'image': '\u{1F5BC}\uFE0F',
+  'audio': '\u{1F3B5}',
+  'utility': '\u{1F527}'
+};
+const DEFAULT_ICON = '\u{1F9EA}';
+
+let experiments = [];
+let activeTags = new Set();
+let activeStatus = 'all';
+let activeSort = 'newest';
+
+function getIcon(tags) {
+  if (!tags || tags.length === 0) return DEFAULT_ICON;
+  return TAG_ICONS[tags[0]] || DEFAULT_ICON;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function buildTagPills() {
+  const allTags = new Set();
+  experiments.forEach(e => (e.tags || []).forEach(t => allTags.add(t)));
+  const sorted = [...allTags].sort();
+  const container = document.getElementById('tagPills');
+  container.innerHTML = sorted.map(t =>
+    `<span class="tag-pill" data-tag="${esc(t)}">${esc(t)}</span>`
+  ).join('');
+
+  container.addEventListener('click', function(ev) {
+    const pill = ev.target.closest('.tag-pill');
+    if (!pill) return;
+    const tag = pill.dataset.tag;
+    if (activeTags.has(tag)) {
+      activeTags.delete(tag);
+      pill.classList.remove('active');
+    } else {
+      activeTags.add(tag);
+      pill.classList.add('active');
+    }
+    renderPipeline();
+  });
+}
+
+function setupStatusToggles() {
+  document.getElementById('statusToggles').addEventListener('click', function(ev) {
+    const btn = ev.target.closest('.status-toggle');
+    if (!btn) return;
+    activeStatus = btn.dataset.status;
+    this.querySelectorAll('.status-toggle').forEach(b => b.classList.toggle('active', b === btn));
+    renderPipeline();
+  });
+}
+
+function setupSortControl() {
+  document.getElementById('sortControl').addEventListener('click', function(ev) {
+    const btn = ev.target.closest('.sort-btn');
+    if (!btn) return;
+    activeSort = btn.dataset.sort;
+    this.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderPipeline();
+  });
+}
+
+function setupSearch() {
+  document.getElementById('searchInput').addEventListener('input', renderPipeline);
+}
+
+function renderPipeline() {
+  let data = experiments.slice();
+
+  // Search
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (q) {
+    data = data.filter(e => {
+      const haystack = [
+        e.title,
+        e.description,
+        (e.tags || []).join(' '),
+        (e.stack || []).join(' ')
+      ].join(' ').toLowerCase();
+      return haystack.includes(q);
+    });
+  }
+
+  // Tag filter (OR logic; empty = no filter)
+  if (activeTags.size > 0) {
+    data = data.filter(e =>
+      (e.tags || []).some(t => activeTags.has(t))
+    );
+  }
+
+  // Status filter
+  if (activeStatus !== 'all') {
+    data = data.filter(e => e.status === activeStatus);
+  }
+
+  // Sort
+  if (activeSort === 'newest') {
+    data.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  } else {
+    data.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  }
+
+  render(data);
+}
+
+function render(data) {
+  const el = document.getElementById('content');
+
+  if (data.length === 0) {
+    el.innerHTML = '<div class="empty-state">No experiments match your filters.</div>';
+    return;
+  }
+
+  el.innerHTML = `<div class="cards-grid">${data.map(cardHTML).join('')}</div>`;
+}
+
+function cardHTML(e) {
+  const statusClass = 'status-' + (e.status || 'working');
+  const thumb = e.thumbnail
+    ? `<div class="card-thumb"><img src="${esc(e.thumbnail)}" alt="${esc(e.title)}"></div>`
+    : `<div class="card-thumb">${getIcon(e.tags)}</div>`;
+
+  const tags = (e.tags || []).map(t => `<span class="card-tag">${esc(t)}</span>`).join('');
+  const stack = (e.stack || []).join(' · ');
+
+  return `<a class="card" href="${esc(e.url)}">
+    ${thumb}
+    <div class="card-body">
+      <div class="card-header">
+        <span class="card-title">${esc(e.title)}</span>
+        <span class="status-badge ${statusClass}">${esc(e.status)}</span>
+      </div>
+      <div class="card-desc">${esc(e.description)}</div>
+      <div class="card-date">${esc(e.date)}</div>
+      <div class="card-tags">${tags}</div>
+      ${stack ? `<div class="card-stack">${esc(stack)}</div>` : ''}
+    </div>
+  </a>`;
+}
+
+fetch('experiments.json')
+  .then(r => {
+    if (!r.ok) throw new Error('fetch failed');
+    return r.json();
+  })
+  .then(data => {
+    experiments = data;
+    buildTagPills();
+    setupStatusToggles();
+    setupSortControl();
+    setupSearch();
+    renderPipeline();
+  })
+  .catch(() => {
+    document.getElementById('content').innerHTML =
+      '<div class="error-state">Could not load experiments. If testing locally, please use a local server (e.g. <code>python3 -m http.server</code>).</div>';
+  });
+</script>
+</body>
+</html>

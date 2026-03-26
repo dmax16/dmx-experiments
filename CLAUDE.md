@@ -4,6 +4,17 @@ This file provides guidance to Claude Code when working on this repository.
 
 ---
 
+## Session Setup
+
+At the start of every new Claude Code session, before doing anything else,
+ask dmax: "Do you want to enable auto-approve mode for this session?
+(runs with --dangerously-skip-permissions)"
+
+Wait for the answer before proceeding. If yes, note it and work without
+asking for confirmations. If no, proceed normally with confirmations.
+
+---
+
 ## Project Purpose
 
 DMX Experiments is a personal catalogue website hosted at
