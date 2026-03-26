@@ -420,12 +420,14 @@ Once done, give me the project URL and anon key.
 
 ## Manual End-to-End Test
 
-Run this once you have your Anthropic API key. Replace `sk-ant-...` with your key. All other values are already correct for the dmax-token-tracker Supabase project.
+Run this once you have your Anthropic API key. Replace the two placeholders:
+- `sk-ant-...` — your Anthropic API key
+- `YOUR_SUPABASE_SERVICE_ROLE_KEY` — Supabase dashboard → Settings → API → service_role
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-... \
 SUPABASE_URL=https://wtarccxwnfpbptzolxht.supabase.co \
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXJjY3h3bmZwYnB0em9seGh0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDUyNjIwNCwiZXhwIjoyMDkwMTAyMjA0fQ.-1GgnGfEqLwva4YXFuY8OHzUrhVWX7fN2cktfwHIs34 \
+SUPABASE_KEY=YOUR_SUPABASE_SERVICE_ROLE_KEY \
 PROJECT_NAME=token-tracker-test \
 python3 -c "
 from dmax_token_tracker import TrackedAnthropic
