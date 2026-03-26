@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Token Tracker — DMX Experiments</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f13;
+      color: #e8e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 32px 40px;
+      border-bottom: 1px solid #ffffff15;
+    }
+
+    .back-link {
+      display: inline-block;
+      color: #64748b;
+      text-decoration: none;
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: #94a3b8; }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #fff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p { color: #94a3b8; margin-top: 4px; font-size: 0.9rem; }
+
+    /* Mock data banner */
+    .mock-banner {
+      background: #78350f;
+      border-left: 4px solid #f59e0b;
+      color: #fbbf24;
+      padding: 12px 40px;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .mock-banner.visible { display: block; }
+
+    /* Stats row */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      padding: 24px 40px;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: #1a1a2e;
+      border: 1px solid #ffffff12;
+      border-radius: 12px;
+      padding: 16px 24px;
+      min-width: 140px;
+      flex: 1;
+    }
+
+    .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; color: #a78bfa; }
+
+    /* Section label */
+    .section-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    /* Two-column layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 0 40px 24px;
+    }
+
+    .panel {
+      background: #1a1a2e;
+      border: 1px solid #ffffff12;
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    /* Breakdown tables */
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .breakdown-table th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #475569;
+      padding: 8px 0;
+      border-bottom: 1px solid #ffffff08;
+    }
+
+    .breakdown-table td {
+      padding: 10px 0;
+      color: #cbd5e1;
+      border-bottom: 1px solid #ffffff06;
+      vertical-align: middle;
+    }
+
+    .breakdown-table td:first-child {
+      color: #e8e8f0;
+      font-weight: 600;
+    }
+
+    .breakdown-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: #94a3b8;
+    }
+
+    .breakdown-table th.num { text-align: right; }
+
+    .bar-cell { width: 100px; padding-left: 12px !important; }
+
+    .bar-track {
+      height: 6px;
+      background: #a78bfa20;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #a78bfa;
+      border-radius: 3px;
+    }
+
+    /* Chart section */
+    .chart-section {
+      padding: 0 40px 24px;
+    }
+
+    .chart-card {
+      background: #1a1a2e;
+      border: 1px solid #ffffff12;
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    .chart-card canvas {
+      width: 100% !important;
+      max-height: 300px;
+    }
+
+    /* Recent calls table */
+    .recent-section {
+      padding: 0 40px 40px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #ffffff12;
+    }
+
+    .recent-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .recent-table thead tr { background: #1a1a2e; }
+
+    .recent-table th {
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .recent-table th.num { text-align: right; }
+
+    .recent-table tbody tr {
+      border-top: 1px solid #ffffff08;
+      transition: background 0.15s;
+    }
+
+    .recent-table tbody tr:hover { background: #ffffff06; }
+
+    .recent-table td {
+      padding: 12px 16px;
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+
+    .recent-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .recent-table td.time-col { color: #64748b; white-space: nowrap; }
+    .recent-table td.project-col { color: #e8e8f0; font-weight: 600; }
+    .recent-table td.model-col { color: #94a3b8; font-size: 0.8rem; }
+    .recent-table td.cost-col { color: #a78bfa; font-weight: 600; }
+
+    /* Loading */
+    .loading-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+      header { padding: 24px 20px; }
+      .mock-banner { padding: 12px 20px; }
+      .stats-row { padding: 16px 20px; }
+      .two-col { grid-template-columns: 1fr; padding: 0 20px 16px; }
+      .chart-section { padding: 0 20px 16px; }
+      .recent-section { padding: 0 20px 32px; }
+      .bar-cell { width: 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="back-link">&larr; DMX Experiments</a>
+  <h1>Token Tracker</h1>
+  <p>API usage and cost across all dmax projects</p>
+</header>
+
+<div class="mock-banner" id="mockBanner">
+  Showing mock data &mdash; live data will appear once the tracker is active
+</div>
+
+<div class="stats-row" id="statsRow">
+  <div class="loading-state">Loading data...</div>
+</div>
+
+<div class="two-col" id="twoCol" style="display: none;"></div>
+<div class="chart-section" id="chartSection" style="display: none;"></div>
+<div class="recent-section" id="recentSection" style="display: none;"></div>
+
+<script>
+// ── Mock Data Generation ──────────────────────────────────────────────
+
+function generateMockData() {
+  const projects = ['comms-hub', 'peterbot', 'token-tracker-test'];
+  const models = [
+    { name: 'claude-opus-4-6-20250514', inputPrice: 15 / 1e6, outputPrice: 75 / 1e6, inputRange: [200, 800], outputRange: [50, 300] },
+    { name: 'claude-sonnet-4-6-20250514', inputPrice: 3 / 1e6, outputPrice: 15 / 1e6, inputRange: [100, 400], outputRange: [50, 200] },
+    { name: 'claude-haiku-4-5-20251001', inputPrice: 0.80 / 1e6, outputPrice: 4 / 1e6, inputRange: [50, 200], outputRange: [20, 100] }
+  ];
+
+  // Project-model weights: [opus, sonnet, haiku]
+  const projectWeights = {
+    'comms-hub':           [0.35, 0.50, 0.15],
+    'peterbot':            [0.05, 0.35, 0.60],
+    'token-tracker-test':  [0.00, 0.15, 0.85]
+  };
+
+  // Project call counts (approximate)
+  const projectCounts = { 'comms-hub': 120, 'peterbot': 60, 'token-tracker-test': 20 };
+
+  const rows = [];
+  const now = new Date();
+
+  for (const project of projects) {
+    const count = projectCounts[project];
+    const weights = projectWeights[project];
+
+    for (let i = 0; i < count; i++) {
+      // Pick model based on weights
+      const r = Math.random();
+      let modelIdx = 0;
+      let cumulative = 0;
+      for (let m = 0; m < weights.length; m++) {
+        cumulative += weights[m];
+        if (r < cumulative) { modelIdx = m; break; }
+      }
+      const model = models[modelIdx];
+
+      const inputTokens = randInt(model.inputRange[0], model.inputRange[1]);
+      const outputTokens = randInt(model.outputRange[0], model.outputRange[1]);
+      const costUsd = inputTokens * model.inputPrice + outputTokens * model.outputPrice;
+
+      // Spread across 30 days, bias toward recent days (exponential)
+      const daysAgo = Math.floor(Math.pow(Math.random(), 1.8) * 30);
+      const hoursOffset = randInt(0, 23);
+      const minutesOffset = randInt(0, 59);
+      const d = new Date(now);
+      d.setDate(d.getDate() - daysAgo);
+      d.setHours(hoursOffset, minutesOffset, randInt(0, 59), 0);
+
+      rows.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : 'mock-' + rows.length,
+        created_at: d.toISOString(),
+        project: project,
+        model: model.name,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        cost_usd: parseFloat(costUsd.toFixed(6)),
+        metadata: null
+      });
+    }
+  }
+
+  // Sort by created_at descending
+  rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return rows;
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// ── Data Loading ──────────────────────────────────────────────────────
+
+async function loadData() {
+  let data = null;
+  let isMock = false;
+
+  try {
+    const client = supabase.createClient(
+      'https://wtarccxwnfpbptzolxht.supabase.co',
+      'sb_publishable_CUziKHxogLyN_F50uMu4mA_4StExelV'
+    );
+
+    const { data: rows, error } = await client
+      .from('api_calls')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10000);
+
+    if (error || !rows || rows.length === 0) {
+      data = generateMockData();
+      isMock = true;
+    } else {
+      data = rows;
+      isMock = false;
+    }
+  } catch (e) {
+    data = generateMockData();
+    isMock = true;
+  }
+
+  return { data, isMock };
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────
+
+function renderDashboard(data, isMock) {
+  if (isMock) {
+    document.getElementById('mockBanner').classList.add('visible');
+  }
+
+  renderStats(data);
+  renderBreakdowns(data);
+  renderChart(data);
+  renderRecentCalls(data);
+}
+
+function renderStats(data) {
+  const now = new Date();
+  const currentMonth = now.getFullYear() * 100 + (now.getMonth() + 1);
+
+  const totalSpend = data.reduce((s, r) => s + parseFloat(r.cost_usd), 0);
+  const totalCalls = data.length;
+
+  const thisMonthRows = data.filter(r => {
+    const d = new Date(r.created_at);
+    return d.getFullYear() * 100 + (d.getMonth() + 1) === currentMonth;
+  });
+
+  const monthSpend = thisMonthRows.reduce((s, r) => s + parseFloat(r.cost_usd), 0);
+  const monthCalls = thisMonthRows.length;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="label">Total Spend</div><div class="value">${formatCost(totalSpend)}</div></div>
+    <div class="stat-card"><div class="label">This Month</div><div class="value">${formatCost(monthSpend)}</div></div>
+    <div class="stat-card"><div class="label">Total Calls</div><div class="value">${totalCalls.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="label">This Month Calls</div><div class="value">${monthCalls.toLocaleString()}</div></div>
+  `;
+}
+
+function renderBreakdowns(data) {
+  // Cost by project
+  const byProject = {};
+  data.forEach(r => {
+    if (!byProject[r.project]) byProject[r.project] = { cost: 0, calls: 0 };
+    byProject[r.project].cost += parseFloat(r.cost_usd);
+    byProject[r.project].calls += 1;
+  });
+
+  const projectEntries = Object.entries(byProject).sort((a, b) => b[1].cost - a[1].cost);
+  const maxProjectCost = projectEntries.length > 0 ? (projectEntries[0][1].cost || 1) : 1;
+
+  // Cost by model
+  const byModel = {};
+  data.forEach(r => {
+    if (!byModel[r.model]) byModel[r.model] = { cost: 0, inputTokens: 0, outputTokens: 0 };
+    byModel[r.model].cost += parseFloat(r.cost_usd);
+    byModel[r.model].inputTokens += r.input_tokens;
+    byModel[r.model].outputTokens += r.output_tokens;
+  });
+
+  const modelEntries = Object.entries(byModel).sort((a, b) => b[1].cost - a[1].cost);
+  const maxModelCost = modelEntries.length > 0 ? (modelEntries[0][1].cost || 1) : 1;
+
+  const container = document.getElementById('twoCol');
+  container.style.display = '';
+  container.innerHTML = `
+    <div class="panel">
+      <div class="section-label">Cost by Project</div>
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th class="num">Cost</th>
+            <th class="num">Calls</th>
+            <th class="bar-cell"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${projectEntries.map(([name, d]) => `
+            <tr>
+              <td>${esc(name)}</td>
+              <td class="num">${formatCost(d.cost)}</td>
+              <td class="num">${d.calls.toLocaleString()}</td>
+              <td class="bar-cell">
+                <div class="bar-track"><div class="bar-fill" style="width: ${(d.cost / maxProjectCost * 100).toFixed(1)}%"></div></div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="section-label">Cost by Model</div>
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th class="num">Cost</th>
+            <th class="num">Input</th>
+            <th class="num">Output</th>
+            <th class="bar-cell"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${modelEntries.map(([name, d]) => `
+            <tr>
+              <td>${formatModelName(name)}</td>
+              <td class="num">${formatCost(d.cost)}</td>
+              <td class="num">${formatTokens(d.inputTokens)}</td>
+              <td class="num">${formatTokens(d.outputTokens)}</td>
+              <td class="bar-cell">
+                <div class="bar-track"><div class="bar-fill" style="width: ${(d.cost / maxModelCost * 100).toFixed(1)}%"></div></div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderChart(data) {
+  const section = document.getElementById('chartSection');
+  section.style.display = '';
+  section.innerHTML = `
+    <div class="chart-card">
+      <div class="section-label">Daily Cost — Last 30 Days</div>
+      <canvas id="costChart"></canvas>
+    </div>
+  `;
+
+  // Build daily cost map for last 30 days
+  const now = new Date();
+  const days = [];
+  const labels = [];
+  const costByDay = {};
+
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push(key);
+    labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    costByDay[key] = 0;
+  }
+
+  data.forEach(r => {
+    const key = r.created_at.slice(0, 10);
+    if (costByDay[key] !== undefined) {
+      costByDay[key] += parseFloat(r.cost_usd);
+    }
+  });
+
+  const values = days.map(d => parseFloat(costByDay[d].toFixed(4)));
+
+  new Chart(document.getElementById('costChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Daily Cost (USD)',
+        data: values,
+        borderColor: '#a78bfa',
+        backgroundColor: 'rgba(167, 139, 250, 0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointBackgroundColor: '#a78bfa',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a2e',
+          titleColor: '#e8e8f0',
+          bodyColor: '#94a3b8',
+          borderColor: '#ffffff20',
+          borderWidth: 1,
+          callbacks: {
+            label: function(ctx) { return '$' + ctx.parsed.y.toFixed(4); }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#475569', font: { size: 11 }, maxRotation: 45 },
+          grid: { color: '#ffffff08' }
+        },
+        y: {
+          ticks: {
+            color: '#475569',
+            font: { size: 11 },
+            callback: function(v) { return '$' + v.toFixed(2); }
+          },
+          grid: { color: '#ffffff08' },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+function renderRecentCalls(data) {
+  const section = document.getElementById('recentSection');
+  section.style.display = '';
+
+  const recent = data.slice(0, 20);
+
+  section.innerHTML = `
+    <div class="section-label">Recent API Calls</div>
+    <div class="table-wrap">
+      <table class="recent-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Project</th>
+            <th>Model</th>
+            <th class="num">Input</th>
+            <th class="num">Output</th>
+            <th class="num">Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${recent.map(r => `
+            <tr>
+              <td class="time-col">${formatRelativeTime(r.created_at)}</td>
+              <td class="project-col">${esc(r.project)}</td>
+              <td class="model-col">${formatModelName(r.model)}</td>
+              <td class="num">${r.input_tokens.toLocaleString()}</td>
+              <td class="num">${r.output_tokens.toLocaleString()}</td>
+              <td class="num cost-col">${formatCostPrecise(parseFloat(r.cost_usd))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function formatCost(amount) {
+  if (amount >= 1) return '$' + amount.toFixed(2);
+  if (amount >= 0.01) return '$' + amount.toFixed(2);
+  return '$' + amount.toFixed(4);
+}
+
+function formatCostPrecise(amount) {
+  if (amount >= 0.01) return '$' + amount.toFixed(4);
+  return '$' + amount.toFixed(6);
+}
+
+function formatTokens(count) {
+  if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+  if (count >= 1000) return (count / 1000).toFixed(1) + 'k';
+  return count.toLocaleString();
+}
+
+function formatModelName(name) {
+  // Shorten versioned model names for display
+  if (name.includes('opus')) return 'Opus';
+  if (name.includes('sonnet')) return 'Sonnet';
+  if (name.includes('haiku')) return 'Haiku';
+  return esc(name);
+}
+
+function formatRelativeTime(isoString) {
+  const now = new Date();
+  const then = new Date(isoString);
+  const diffMs = now - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSec < 60) return 'just now';
+  if (diffMin < 60) return diffMin + ' min ago';
+  if (diffHours < 24) return diffHours + (diffHours === 1 ? ' hour ago' : ' hours ago');
+  if (diffDays < 7) return diffDays + (diffDays === 1 ? ' day ago' : ' days ago');
+
+  // Older than a week: show absolute date
+  return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+
+(async function() {
+  const { data, isMock } = await loadData();
+  renderDashboard(data, isMock);
+})();
+</script>
+</body>
+</html>
