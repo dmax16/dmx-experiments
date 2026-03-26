@@ -9,5 +9,16 @@
     "tags": ["data viz", "dashboard"],
     "stack": ["Claude AI", "HTML"],
     "thumbnail": null
+  },
+  {
+    "id": "token-tracker-dashboard",
+    "title": "Token Tracker",
+    "description": "Tracks Anthropic API token usage and cost across all dmax projects. Per-project and per-model breakdowns, spend over time, and a live call log.",
+    "url": "token-tracker-dashboard.html",
+    "date": "2026-03",
+    "status": "working",
+    "tags": ["dashboard", "utility", "ai"],
+    "stack": ["Claude AI", "Supabase", "HTML", "Chart.js"],
+    "thumbnail": null
   }
 ]
