@@ -64,7 +64,7 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      padding: 0 40px;
+      padding: 16px 40px 0;
     }
 
     .tag-pill {
@@ -268,7 +268,7 @@
     @media (max-width: 600px) {
       header { padding: 24px 20px; }
       .controls { padding: 16px 20px 0; }
-      .tag-pills { padding: 0 20px; }
+      .tag-pills { padding: 16px 20px 0; }
       .content { padding: 16px 20px 32px; }
       .cards-grid { grid-template-columns: 1fr; }
     }
@@ -411,12 +411,16 @@ function renderPipeline() {
     data = data.filter(e => e.status === activeStatus);
   }
 
-  // Sort
-  if (activeSort === 'newest') {
-    data.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  } else {
-    data.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  }
+  // Sort — tiebreak same-date entries by insertion order
+  data.sort((a, b) => {
+    const cmp = activeSort === 'newest'
+      ? (b.date || '').localeCompare(a.date || '')
+      : (a.date || '').localeCompare(b.date || '');
+    if (cmp !== 0) return cmp;
+    const ai = experiments.indexOf(a);
+    const bi = experiments.indexOf(b);
+    return activeSort === 'newest' ? bi - ai : ai - bi;
+  });
 
   render(data);
 }
