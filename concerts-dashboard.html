@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bending Concerts Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f13;
+      color: #e8e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 32px 40px;
+      border-bottom: 1px solid #ffffff15;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #fff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p { color: #94a3b8; margin-top: 4px; font-size: 0.9rem; }
+
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      padding: 24px 40px;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: #1a1a2e;
+      border: 1px solid #ffffff12;
+      border-radius: 12px;
+      padding: 16px 24px;
+      min-width: 140px;
+      flex: 1;
+    }
+
+    .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; color: #a78bfa; }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      padding: 0 40px 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 240px;
+      background: #1a1a2e;
+      border: 1px solid #ffffff20;
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #e8e8f0;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus { border-color: #a78bfa; }
+    .search-box::placeholder { color: #475569; }
+
+    select {
+      background: #1a1a2e;
+      border: 1px solid #ffffff20;
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #e8e8f0;
+      font-size: 0.9rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    select:focus { border-color: #a78bfa; }
+
+    .view-toggle {
+      display: flex;
+      background: #1a1a2e;
+      border: 1px solid #ffffff20;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .view-toggle button {
+      background: none;
+      border: none;
+      color: #64748b;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .view-toggle button.active { background: #a78bfa; color: #fff; }
+
+    .content { padding: 0 40px 40px; }
+
+    /* CARD VIEW */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .concert-card {
+      background: #1a1a2e;
+      border: 1px solid #ffffff12;
+      border-radius: 12px;
+      padding: 20px;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      cursor: default;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .concert-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent, #a78bfa);
+    }
+
+    .concert-card:hover {
+      transform: translateY(-2px);
+      border-color: #ffffff25;
+      box-shadow: 0 8px 32px #00000060;
+    }
+
+    .card-artist {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+    }
+
+    .card-date {
+      font-size: 0.85rem;
+      color: #a78bfa;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-date::before { content: '📅'; font-size: 0.8rem; }
+
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 0.82rem;
+      color: #94a3b8;
+    }
+
+    .card-meta span { display: flex; align-items: flex-start; gap: 6px; }
+    .card-meta .icon { flex-shrink: 0; }
+
+    .card-notes {
+      margin-top: 12px;
+      font-size: 0.78rem;
+      color: #64748b;
+      font-style: italic;
+      border-top: 1px solid #ffffff08;
+      padding-top: 10px;
+    }
+
+    .city-badge {
+      display: inline-block;
+      background: #ffffff0f;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      margin-top: 8px;
+    }
+
+    /* TABLE VIEW */
+    .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #ffffff12; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead tr { background: #1a1a2e; }
+
+    th {
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    th:hover { color: #a78bfa; }
+    th.sorted { color: #a78bfa; }
+    th .sort-icon { margin-left: 4px; opacity: 0.5; }
+    th.sorted .sort-icon { opacity: 1; }
+
+    tbody tr {
+      border-top: 1px solid #ffffff08;
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover { background: #ffffff06; }
+
+    td {
+      padding: 12px 16px;
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+
+    td.artist { font-weight: 600; color: #f1f5f9; }
+    td.date { color: #a78bfa; white-space: nowrap; }
+    td.notes { color: #64748b; font-size: 0.8rem; max-width: 240px; }
+
+    /* TIMELINE VIEW */
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+
+    .timeline-group { margin-bottom: 32px; }
+    .timeline-group-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #475569;
+      margin-bottom: 12px;
+      padding-left: 8px;
+      border-left: 3px solid #a78bfa;
+    }
+
+    .timeline-items { display: flex; flex-direction: column; gap: 8px; }
+
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: #1a1a2e;
+      border: 1px solid #ffffff10;
+      border-radius: 10px;
+      padding: 14px 18px;
+      transition: border-color 0.2s;
+    }
+
+    .timeline-item:hover { border-color: #ffffff25; }
+
+    .timeline-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #a78bfa;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    .timeline-content { flex: 1; }
+    .timeline-artist { font-weight: 700; color: #f1f5f9; }
+    .timeline-details { font-size: 0.82rem; color: #64748b; margin-top: 3px; }
+    .timeline-date { font-size: 0.8rem; color: #a78bfa; font-weight: 600; margin-left: auto; flex-shrink: 0; text-align: right; }
+
+    .no-results {
+      text-align: center;
+      padding: 60px;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+
+    .count-label {
+      font-size: 0.82rem;
+      color: #475569;
+      margin-left: auto;
+      padding: 0 40px 16px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎵 Bending Concerts</h1>
+  <p>Concert suggestions from #bending-concerts · Mar 2025 – Mar 2026</p>
+</header>
+
+<div class="stats-row" id="statsRow"></div>
+
+<div class="controls">
+  <input class="search-box" type="text" id="searchInput" placeholder="Search artists, cities, venues...">
+  <select id="cityFilter">
+    <option value="">All Cities</option>
+  </select>
+  <select id="yearFilter">
+    <option value="">All Years</option>
+    <option value="2025">2025</option>
+    <option value="2026">2026</option>
+  </select>
+  <select id="sortBy">
+    <option value="posted">Sort: Posted Date</option>
+    <option value="concert">Sort: Concert Date</option>
+    <option value="artist">Sort: Artist A–Z</option>
+    <option value="city">Sort: City</option>
+  </select>
+  <div class="view-toggle">
+    <button id="btnCards" class="active" onclick="setView('cards')">Cards</button>
+    <button id="btnTable" onclick="setView('table')">Table</button>
+    <button id="btnTimeline" onclick="setView('timeline')">Timeline</button>
+  </div>
+</div>
+
+<div class="count-label" id="countLabel"></div>
+<div class="content" id="content"></div>
+
+<script>
+const RAW = [
+  ["The Lumineers","Apr 27, 2025","Mediolanum Forum","Assago (Milan)","Rebecca Shamritsky","","Mar 2025"],
+  ["Linkin Park","Jun 24, 2025","Ippodromo SNAI","Milan","Mattia Gentil","Friend selling 2 tickets at €98 each","Mar 2025"],
+  ["Jamie XX","Mar 19, 2025","","Milan","Claudia Mazzuca","Ticket for tonight for sale (Dice)","Mar 2025"],
+  ["Opeth","TBD","Vivaticket","Italy","Claudio Di Blasi","","Mar 2025"],
+  ["Lady Gaga","Oct 19/20, 2025","Mediolanum Forum","Assago (Milan)","Federica Baldi","Mayhem Tour","Mar 2025"],
+  ["Offlaga Disco Pax","Mar 31, 2025","Magazzini Generali","Milan","Andrea Maiorana","Free ticket giveaway","Mar 2025"],
+  ["Jamie XX","Jul 11, 2025","Carroponte","Milan","Andrea Maiorana","","Apr 2025"],
+  ["Franco126","Jun 12, 2025","Circolo Magnolia Estivo","Segrate","Davide Carletti","","Apr 2025"],
+  ["Hermanos Gutiérrez","Jun 27, 2025","Anfiteatro del Vittoriale","Gardone Riviera","Claudia Colombo","","Apr 2025"],
+  ["I Cani","Nov 25, 2025","Alcatraz","Milan","Matteo Ghergo","First tour in 9 years","May 2025"],
+  ["Lorde","Nov 29, 2025","Unipol Arena","Casalecchio di Reno (Bologna)","Matteo Paoli","Ultrasound Tour","May 2025"],
+  ["Caparezza","Jul 2026","Parco della Musica di Milano","Milan","Francesco Ragucci","","May 2025"],
+  ["Imagine Dragons + Declan McKenna","May 27, 2025","","Milan","Danilo Miraglia","","May 2025"],
+  ["Don Toliver","Jun 13, 2025","Carroponte","Milan","Davide Carletti","US hip-hop/R&B","Jun 2025"],
+  ["Dua Lipa","Jun 7, 2025","Ippodromo SNAI","Milan","Claudia Mazzuca","Gold Circle ticket; also Jun 8 date","Jun 2025"],
+  ["Fred Again","Sep 4, 2025","Ex Macello","Milan","Amir Ouakri","Presale code: FAITALY25","Jul 2025"],
+  ["The Smashing Pumpkins","Jul 30, 2025","","Segrate","Saverio Pertosa","","Jul 2025"],
+  ["I Cani","Nov 25, 2025","Alcatraz","Milan","Amir Ouakri","Also suggested by Matteo Ghergo","Aug 2025"],
+  ["Trentmøller","Sep 5, 2025","Castello Sforzesco","Milan","Andrea Maiorana","","Aug 2025"],
+  ["Zen Circus","Dec 3, 2025","Alcatraz","Milan","Cecile Nosal","","Aug 2025"],
+  ["The Vaccines","2026 UK Tour","","UK","Elisa Zocchi","15th anniversary of debut album; Milan date Apr 24, 2026","Aug 2025"],
+  ["Radiohead","Nov 14/15, 2025","","Bologna","Fabio Luccioletti","First tour in 7 years; 4 shows","Sep 2025"],
+  ["grandson","Feb 18, 2026","Magazzini Generali","Milan","Fabio Sangregorio","","Sep 2025"],
+  ["The Weeknd","Jul 24, 2026","San Siro","Milan","Davide Carletti","","Sep 2025"],
+  ["Opeth","Oct 6, 2025","Alcatraz","Milan","Saverio Pertosa","","Sep 2025"],
+  ["System of a Down","Jul 6, 2026","","Milan","Saverio Pertosa","With Queens of the Stone Age + Acid Bath","Sep 2025"],
+  ["Ariana Grande","Aug 2026","O2 Arena","London","Matteo Paoli","5+ dates; needs UK O2/Virgin Media presale","Sep 2025"],
+  ["Iron Maiden","Jun 2026","San Siro","Milan","Saverio Pertosa","","Sep 2025"],
+  ["RAYE","Jan 30, 2026","","Bologna","Matteo Paoli","This Tour May Contain New Music","Sep 2025"],
+  ["Tame Impala","Apr 12, 2026","","Turin","Giancarlo Sorrentino","Deadbeat Tour","Sep 2025"],
+  ["God Is An Astronaut","Oct 15, 2025","Santeria Toscana 31","Milan","Andrea Maiorana","With Jo Quail","Sep 2025"],
+  ["Florence + the Machine","Jul 3, 2026","SNAI San Siro Hippodrome","Milan","Elena Paravisi","I-Days 2026","Oct 2025"],
+  ["BUNT.","Nov 1, 2025","Fabrique","Milan","Davide Carletti","German producer; similar vibe to Fred Again","Oct 2025"],
+  ["Lorde (Milan extra date)","Jul 23, 2026","","Milan","Stefano Agresti","Additional Italy date","Oct 2025"],
+  ["Ministri","Nov 4, 2025","Alcatraz","Milan","Saverio Pertosa","","Oct 2025"],
+  ["Bloc Party + Interpol","Fall 2026","","UK/Europe","Tommaso Bonetti","Co-headlining European tour; not coming to Italy","Nov 2025"],
+  ["Jamiroquai","Nov 6, 2025","Unipol Forum","Milan","Claudio Di Blasi","The Heels of Steel Tour","Nov 2025"],
+  ["Poppy","Mar 18, 2026","","Milan","Simone Mallei","","Nov 2025"],
+  ["The Vaccines","Apr 24, 2026","Fabrique","Milan","Elisa Zocchi","15th anniversary tour","Nov 2025"],
+  ["Belle and Sebastian","Jul 12, 2026","","Milan","Fabio Luccioletti","Playing If You're Feeling Sinister in full","Nov 2025"],
+  ["Rufus du Sol","Apr 28, 2026","","Bologna","Davide Carletti","","Dec 2025"],
+  ["Rosalía","Mar 25, 2026","","Milan","Fabio Luccioletti","Lux Tour","Dec 2025"],
+  ["Ligabue","TBD","Arena Milano","Milan","Micaela Jerusalmi","Opening ceremony of new Arena Milano venue","Dec 2025"],
+  ["Evanescence","Sep 28, 2026","","Bologna","Christina Bakirtzi","","Dec 2025"],
+  ["Balu Brigada","Apr 8, 2026","","Milan","Mert Tekdemir","","Jan 2026"],
+  ["Louis Tomlinson / Pale Waves","Apr 10, 2026","Unipol Forum","Milan","Pietro De Nicolao","Pale Waves opening act","Jan 2026"],
+  ["The Cure","Jun 14, 2026","","Florence","Anna Lami","Firenze Rocks festival","Feb 2026"],
+  ["I Cani","Jul 21, 2026","Parco della Musica di Milano","Milan","Saverio Pertosa","Mi Ami Festival","Feb 2026"],
+  ["Korn + Architects","Nov 21, 2026","","Milan","Saverio Pertosa","","Mar 2026"]
+];
+
+const concerts = RAW.map(r => ({
+  artist: r[0], date: r[1], venue: r[2], city: r[3],
+  suggestedBy: r[4], notes: r[5], posted: r[6]
+}));
+
+// Accent colours per city
+const cityColors = {
+  'Milan': '#a78bfa', 'Assago (Milan)': '#c084fc',
+  'Bologna': '#fb923c', 'Casalecchio di Reno (Bologna)': '#fb923c',
+  'Turin': '#34d399', 'Florence': '#f472b6',
+  'Segrate': '#60a5fa', 'Gardone Riviera': '#fbbf24',
+  'London': '#f87171', 'UK': '#f87171', 'UK/Europe': '#f87171',
+  'Italy': '#94a3b8'
+};
+const defaultColor = '#64748b';
+function cityColor(city) {
+  for (const k of Object.keys(cityColors)) { if (city && city.includes(k)) return cityColors[k]; }
+  return defaultColor;
+}
+
+// Parse month index for sorting
+function parseSortDate(d) {
+  if (!d || d === 'TBD') return 99999999;
+  const monthMap = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  const m = d.match(/(\w+)\s*(\d{4})/);
+  if (m) return parseInt(m[2]) * 100 + (monthMap[m[1]] || 0);
+  const m2 = d.match(/(\d{4})/);
+  if (m2) return parseInt(m2[1]) * 100;
+  return 99999999;
+}
+
+let currentView = 'cards';
+
+function setView(v) {
+  currentView = v;
+  ['cards','table','timeline'].forEach(x => document.getElementById('btn'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('active', x === v));
+  render();
+}
+
+function filtered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const city = document.getElementById('cityFilter').value;
+  const year = document.getElementById('yearFilter').value;
+  const sort = document.getElementById('sortBy').value;
+
+  let data = concerts.filter(c => {
+    const haystack = [c.artist, c.city, c.venue, c.suggestedBy, c.notes, c.date].join(' ').toLowerCase();
+    if (q && !haystack.includes(q)) return false;
+    if (city && c.city !== city) return false;
+    if (year && !c.date.includes(year) && !c.posted.includes(year)) return false;
+    return true;
+  });
+
+  data.sort((a, b) => {
+    if (sort === 'artist') return a.artist.localeCompare(b.artist);
+    if (sort === 'city') return (a.city || '').localeCompare(b.city || '');
+    if (sort === 'concert') return parseSortDate(a.date) - parseSortDate(b.date);
+    return parseSortDate(a.posted) - parseSortDate(b.posted);
+  });
+
+  return data;
+}
+
+function render() {
+  const data = filtered();
+  document.getElementById('countLabel').textContent = `Showing ${data.length} of ${concerts.length} concerts`;
+  const el = document.getElementById('content');
+
+  if (data.length === 0) {
+    el.innerHTML = '<div class="no-results">No concerts match your search.</div>';
+    return;
+  }
+
+  if (currentView === 'cards') renderCards(data, el);
+  else if (currentView === 'table') renderTable(data, el);
+  else renderTimeline(data, el);
+}
+
+function renderCards(data, el) {
+  el.innerHTML = `<div class="cards-grid">${data.map(c => `
+    <div class="concert-card" style="--accent:${cityColor(c.city)}">
+      <div class="card-artist">${esc(c.artist)}</div>
+      <div class="card-date">${esc(c.date) || 'TBD'}</div>
+      <div class="card-meta">
+        ${c.venue ? `<span><span class="icon">📍</span>${esc(c.venue)}</span>` : ''}
+        <span><span class="icon">🌆</span>${esc(c.city) || '—'}</span>
+        <span><span class="icon">👤</span>${esc(c.suggestedBy)}</span>
+      </div>
+      ${c.notes ? `<div class="card-notes">${esc(c.notes)}</div>` : ''}
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderTable(data, el) {
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>Artist</th><th>Concert Date</th><th>Venue</th>
+      <th>City</th><th>Suggested By</th><th>Notes</th><th>Posted</th>
+    </tr></thead>
+    <tbody>${data.map(c => `
+      <tr>
+        <td class="artist">${esc(c.artist)}</td>
+        <td class="date">${esc(c.date) || '—'}</td>
+        <td>${esc(c.venue) || '—'}</td>
+        <td><span style="color:${cityColor(c.city)}">${esc(c.city) || '—'}</span></td>
+        <td>${esc(c.suggestedBy)}</td>
+        <td class="notes">${esc(c.notes) || ''}</td>
+        <td style="color:#475569;white-space:nowrap">${esc(c.posted)}</td>
+      </tr>
+    `).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderTimeline(data, el) {
+  // Group by concert year+month
+  const groups = {};
+  data.forEach(c => {
+    const key = c.date && c.date !== 'TBD' ? c.date.replace(/^[A-Za-z]+ (\d+),\s*/, '').match(/\d{4}/)?.[0] + ' — ' + (c.date.match(/^[A-Za-z]+/)?.[0] || '') : 'TBD / Unknown';
+    const label = formatGroupLabel(c.date);
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(c);
+  });
+
+  el.innerHTML = `<div class="timeline">${Object.entries(groups).map(([label, items]) => `
+    <div class="timeline-group">
+      <div class="timeline-group-label">${label}</div>
+      <div class="timeline-items">${items.map(c => `
+        <div class="timeline-item">
+          <div class="timeline-dot" style="background:${cityColor(c.city)}"></div>
+          <div class="timeline-content">
+            <div class="timeline-artist">${esc(c.artist)}</div>
+            <div class="timeline-details">${[c.venue, c.city, c.suggestedBy].filter(Boolean).join(' · ')}</div>
+            ${c.notes ? `<div style="font-size:0.77rem;color:#475569;margin-top:2px">${esc(c.notes)}</div>` : ''}
+          </div>
+          <div class="timeline-date">${esc(c.date) || 'TBD'}</div>
+        </div>
+      `).join('')}</div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function formatGroupLabel(d) {
+  if (!d || d === 'TBD') return '📅 TBD / Unknown';
+  const m = d.match(/(\w+)\s+(\d{4})/);
+  if (m) return `${m[2]} — ${m[1]}`;
+  const m2 = d.match(/(\d{4})/);
+  if (m2) return m2[1];
+  return d;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Build stats
+function buildStats() {
+  const cities = [...new Set(concerts.map(c => c.city).filter(Boolean))].sort();
+  const suggesters = [...new Set(concerts.map(c => c.suggestedBy).filter(Boolean))];
+  const milanCount = concerts.filter(c => c.city && c.city.toLowerCase().includes('milan')).length;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="label">Total Concerts</div><div class="value">${concerts.length}</div></div>
+    <div class="stat-card"><div class="label">In Milan</div><div class="value">${milanCount}</div></div>
+    <div class="stat-card"><div class="label">Unique Cities</div><div class="value">${cities.length}</div></div>
+    <div class="stat-card"><div class="label">Unique Suggesters</div><div class="value">${suggesters.length}</div></div>
+  `;
+
+  // Populate city filter
+  const sel = document.getElementById('cityFilter');
+  cities.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+}
+
+buildStats();
+['searchInput','cityFilter','yearFilter','sortBy'].forEach(id =>
+  document.getElementById(id).addEventListener('input', render)
+);
+render();
+</script>
+</body>
+</html>
